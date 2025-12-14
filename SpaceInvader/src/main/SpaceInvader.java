@@ -7,20 +7,21 @@ import javax.swing.*;
 
 public class SpaceInvader extends JPanel implements ActionListener, KeyListener {
 
-    // variables de la nave
+    // Nave
     int naveAncho = 40;
     int naveAlto = 20;
     int naveX = 256;
     int naveY = 480;
-    int nave_speed = 5;
-    int disparo_x = naveX+(naveAncho/2);
-    int disparo_y = naveY;
-    boolean disparo_existencia = false;
-    int disparo_ancho = 5;
-    int disparo_alto = 10;
-    int disparo_speed = 10;
+    int naveSpeed = 5;
+
+    // Disparo
+    int disparoAncho = 5;
+    int disparoAlto = 10;
+    int disparoSpeed = 10;
+
+    // Listas
     ArrayList<Rectangle> enemigos = new ArrayList<>();
-    ArrayList<Rectangle> disparoArray = new ArrayList();
+    ArrayList<Rectangle> disparos = new ArrayList<>();
 
     public SpaceInvader() {
         setPreferredSize(new Dimension(512, 512));
@@ -28,100 +29,127 @@ public class SpaceInvader extends JPanel implements ActionListener, KeyListener 
 
         generarEnemigos();
 
-        // activar teclado
         setFocusable(true);
         addKeyListener(this);
 
-        // refrescar pantalla
-        Timer timer = new Timer(16, this);
+        Timer timer = new Timer(16, this); // ~60 FPS
         timer.start();
     }
 
     public static void main(String[] args) {
-
         JFrame frame = new JFrame("Space Invader Trucho");
         SpaceInvader game = new SpaceInvader();
 
         frame.add(game);
-        frame.pack();  // usa el tamaño del panel (512x512)
+        frame.pack();
         frame.setResizable(false);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
-    //Disparo
 
+    // ================= ENEMIGOS =================
 
-    // crear enemigos 1 sola vez
     public void generarEnemigos() {
         int lado = 20;
 
-        for (int i = 0; i < 300; i += 50) {
-            for (int j = 0; j < 200; j += 50) {
-                enemigos.add(new Rectangle(i, j, lado, lado));
+        for (int x = 50; x <= 350; x += 50) {
+            for (int y = 50; y <= 200; y += 50) {
+                enemigos.add(new Rectangle(x, y, lado, lado));
             }
         }
     }
-    //Limites de persoanjes y disparo
-    public void limites(){
-        if(naveX < 0) naveX = 0;
+
+    // ================= DISPAROS =================
+
+    public void moverDisparos() {
+        for (int i = 0; i < disparos.size(); i++) {
+            Rectangle d = disparos.get(i);
+            d.y -= disparoSpeed;
+
+            if (d.y + d.height < 0) {
+                disparos.remove(i);
+                i--;
+            }
+        }
     }
+
+    // ================= COLISIONES =================
+
+    public void detectarColisiones() {
+        for (int i = 0; i < disparos.size(); i++) {
+            Rectangle disparo = disparos.get(i);
+
+            for (int j = 0; j < enemigos.size(); j++) {
+                Rectangle enemigo = enemigos.get(j);
+
+                if (disparo.intersects(enemigo)) {
+                    enemigos.remove(j);
+                    disparos.remove(i);
+                    i--;
+                    break;
+                }
+            }
+        }
+    }
+
+    // ================= DIBUJO =================
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        // dibujar nave
+        // Nave
         g.setColor(Color.WHITE);
         g.fillRect(naveX, naveY, naveAncho, naveAlto);
 
-        // dibujar enemigos
+        // Enemigos
         g.setColor(Color.GREEN);
         for (Rectangle e : enemigos) {
             g.fillRect(e.x, e.y, e.width, e.height);
         }
-        //dibujar disparo
-        for (int i = 0; i < disparoArray.size(); i++) {
-        Rectangle d = disparoArray.get(i);
+
+        // Disparos
         g.setColor(Color.YELLOW);
-        g.fillRect(d.x, d.y, d.width, d.height);
-
-        // mover disparo hacia arriba
-        d.y -= disparo_speed;
-
-        // eliminar disparo si sale de pantalla
-        if (d.y + d.height < 0) {
-            disparoArray.remove(i);
-            i--;
+        for (Rectangle d : disparos) {
+            g.fillRect(d.x, d.y, d.width, d.height);
         }
     }
-}
-    // KEYLISTENER
+
+    // ================= INPUT =================
+
     @Override
     public void keyPressed(KeyEvent e) {
         int tecla = e.getKeyCode();
 
-        if (tecla == KeyEvent.VK_A) naveX -= nave_speed;
-        if(naveX < 0) naveX = 0;
-        if(naveX > 465) naveX = 465;
-        if (tecla == KeyEvent.VK_D) naveX += nave_speed;
-        if(tecla == KeyEvent.VK_K){
-                Rectangle disparo = new Rectangle(naveX,naveY,disparo_ancho,disparo_alto);
-                disparoArray.add(disparo);
-            }
+        if (tecla == KeyEvent.VK_A) naveX -= naveSpeed;
+        if (tecla == KeyEvent.VK_D) naveX += naveSpeed;
+
+        // Límites
+        if (naveX < 0) naveX = 0;
+        if (naveX > getWidth() - naveAncho) naveX = getWidth() - naveAncho;
+
+        // Disparo
+        if (tecla == KeyEvent.VK_K) {
+            Rectangle disparo = new Rectangle(
+                naveX + naveAncho / 2 - disparoAncho / 2,
+                naveY,
+                disparoAncho,
+                disparoAlto
+            );
+            disparos.add(disparo);
         }
-
-
-    @Override
-    public void keyReleased(KeyEvent e) {
-}
-    @Override
-    public void keyTyped(KeyEvent e) {
-        
     }
 
-    // refresco de pantalla
+    @Override public void keyReleased(KeyEvent e) {}
+    @Override public void keyTyped(KeyEvent e) {}
+
+    // ================= LOOP =================
+
     @Override
     public void actionPerformed(ActionEvent e) {
+        moverDisparos();
+        detectarColisiones();
         repaint();
     }
 }
