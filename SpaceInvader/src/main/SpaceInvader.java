@@ -30,6 +30,7 @@ public class SpaceInvader extends JPanel implements ActionListener, KeyListener 
         generarEnemigos();
 
         setFocusable(true);
+
         addKeyListener(this);
 
         Timer timer = new Timer(16, this); // ~60 FPS
@@ -46,6 +47,7 @@ public class SpaceInvader extends JPanel implements ActionListener, KeyListener 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+
     }
 
     // ================= ENEMIGOS =================
@@ -57,8 +59,70 @@ public class SpaceInvader extends JPanel implements ActionListener, KeyListener 
             for (int y = 50; y <= 200; y += 50) {
                 enemigos.add(new Rectangle(x, y, lado, lado));
             }
+
         }
     }
+    int enemigosVelX = 2;   // velocidad horizontal
+int enemigosPasoY = 20; // cuanto bajan
+boolean moverDerecha = true;
+boolean gameOver = false;
+    // MOVIMIENTO DE ENEMIGOS
+public void moverEnemigo(){
+
+    if(enemigos.isEmpty()) return;
+
+    Rectangle nave = new Rectangle(naveX, naveY, naveAncho, naveAlto);
+    boolean cambiarDireccion = false;
+
+    for(Rectangle e : enemigos){
+
+        //  Colisión con la nave
+        if(e.intersects(nave)){
+            gameOver = true;
+        }
+
+        if(moverDerecha && e.x + e.width >= getWidth()){
+            cambiarDireccion = true;
+        }
+
+        if(!moverDerecha && e.x <= 0){
+            cambiarDireccion = true;
+        }
+    }
+
+    if(cambiarDireccion){
+        moverDerecha = !moverDerecha;
+
+        for(Rectangle e : enemigos){
+            e.y += enemigosPasoY;
+
+            if(e.y + e.height >= naveY){
+                gameOver = true;
+            }
+        }
+
+    } else {
+        for(Rectangle e : enemigos){
+            e.x += moverDerecha ? enemigosVelX : -enemigosVelX;
+        }
+    }
+
+    if(enemigos.size() <= 28/2 && enemigos.size() > 28/3){
+        enemigosVelX = 4;
+    }
+    if(enemigos.size() <= 28/4){
+        enemigosVelX = 6;
+    }
+}
+
+public void reiniciarJuego(){
+    enemigos.clear();
+    disparos.clear();
+    gameOver = false;
+    generarEnemigos();
+    requestFocusInWindow();
+    enemigosVelX = 2;
+}
 
     // ================= DISPAROS =================
 
@@ -102,18 +166,38 @@ public class SpaceInvader extends JPanel implements ActionListener, KeyListener 
         // Nave
         g.setColor(Color.WHITE);
         g.fillRect(naveX, naveY, naveAncho, naveAlto);
-
-        // Enemigos
+if(enemigos.size() <= 28/4){
+    g.setColor(Color.RED);
+}
+if(enemigos.size() <= 28/2 && enemigos.size() > 28/4){
+        g.setColor(Color.ORANGE);
+    }
+    if(enemigos.size() > 28/2){
         g.setColor(Color.GREEN);
-        for (Rectangle e : enemigos) {
-            g.fillRect(e.x, e.y, e.width, e.height);
-        }
+    }
+
+            // Pedir focus correctamente
+
+    for (Rectangle e : enemigos) {
+        g.fillRect(e.x, e.y, e.width, e.height);
+    }
+
 
         // Disparos
         g.setColor(Color.YELLOW);
         for (Rectangle d : disparos) {
             g.fillRect(d.x, d.y, d.width, d.height);
         }
+if (gameOver) {
+    g.setColor(Color.RED);
+    g.setFont(new Font("Arial", Font.BOLD, 36));
+    g.drawString("GAME OVER", 150, 250);
+}
+if(enemigos.isEmpty()){
+    g.setColor(Color.WHITE);
+    g.setFont(new Font ("Arial", Font.BOLD,36));
+    g.drawString("GANASTE",150,250);
+}
     }
 
     // ================= INPUT =================
@@ -148,8 +232,16 @@ public class SpaceInvader extends JPanel implements ActionListener, KeyListener 
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        if(!gameOver){
+        moverEnemigo();
         moverDisparos();
         detectarColisiones();
+        if(enemigos.isEmpty()){
+            App.cardLayout.show(App.contenedor, "MENU");
+            gameOver = true;
+            reiniciarJuego();
+        }
         repaint();
+    }
     }
 }

@@ -1,0 +1,1 @@
+INDEX VERSION 1.134+C:\Users\danie\OneDrive\Escritorio\Java VSC\SpaceInvader0\SpaceInvader\.metadata\.plugins\org.eclipse.jdt.core
